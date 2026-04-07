@@ -1,0 +1,9 @@
+---
+source: src/commands.rs
+expression: r.help_text()
+---
+My cool bot.
+
+Available Commands:
+
+/help - Show this help message

@@ -1,0 +1,64 @@
+[package]
+name = "threema-gateway-bot"
+version = "0.1.0"
+authors = ["Threema GmbH <opensource@threema.ch>"]
+documentation = "https://docs.rs/threema-gateway-bot"
+repository = "https://github.com/threema-ch/threema-gateway-bot/"
+license = "MIT OR Apache-2.0"
+description = "Library for building Threema Gateway bots."
+readme = "README.md"
+keywords = ["threema", "bot", "server", "gateway", "messaging"]
+categories = ["web-programming", "web-programming::http-server"]
+include = [
+    "**/*.rs",
+    "Cargo.toml",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE-MIT",
+    "LICENSE-APACHE",
+]
+edition = "2024"
+
+[dependencies]
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+
+# Web framework
+axum = "0.8"
+
+# Threema integration
+threema-gateway = { version = "0.20", features = ["public-key-cache-inmemory"] }
+crypto_box = { version = "0.9", features = ["serde"] }
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Date/time
+chrono = { version = "0.4", default-features = false, features = ["std"] }
+
+# Configuration
+config = "0.14"
+
+# Error handling
+thiserror = "2"
+
+# Logging
+tracing = "0.1"
+
+# TTL caching
+moka = { version = "0.12", features = ["future", "sync"] }
+
+# Utilities
+async-trait = "0.1"
+
+# Image processing (for file message thumbnails)
+image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
+
+# Media type handling
+mime = "0.3"
+
+[dev-dependencies]
+anyhow = "1"
+insta = "1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }

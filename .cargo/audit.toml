@@ -1,0 +1,5 @@
+# Cargo audit configuration
+# https://rustsec.org/
+
+[advisories]
+ignore = []

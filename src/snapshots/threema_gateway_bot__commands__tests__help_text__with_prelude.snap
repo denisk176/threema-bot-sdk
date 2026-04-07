@@ -1,0 +1,11 @@
+---
+source: src/commands.rs
+expression: "r.help_text_with_prelude(Some(\"Unknown command: /foo\"))"
+---
+Unknown command: /foo
+
+---
+
+Available Commands:
+
+/help - Show this help message

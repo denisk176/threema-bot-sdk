@@ -1,0 +1,7 @@
+---
+source: src/commands.rs
+expression: r.help_text()
+---
+Available Commands:
+
+/help - Show this help message
