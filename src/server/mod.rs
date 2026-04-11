@@ -7,7 +7,7 @@ use std::{sync::Arc, time::Duration};
 
 use axum::{
     Router,
-    extract::State,
+    extract::{Request, State},
     response::IntoResponse,
     routing::{get, post},
 };
@@ -234,6 +234,7 @@ impl<H: MessageHandler> BotServer<H> {
         let app = Router::new()
             .route(&config.server.webhook_path, post(webhook_handler::<H>))
             .route("/health", get(health_handler))
+            .fallback(fallback_handler)
             .with_state(app_state);
 
         if config.threema.allowed_users.is_empty() {
@@ -255,6 +256,16 @@ impl<H: MessageHandler> BotServer<H> {
 
         Ok(())
     }
+}
+
+/// Fallback handler for unmatched routes.
+async fn fallback_handler(request: Request) -> impl IntoResponse {
+    tracing::debug!(
+        "{} {} — no matching route",
+        request.method(),
+        request.uri().path()
+    );
+    axum::http::StatusCode::NOT_FOUND
 }
 
 /// Health check handler.
