@@ -21,7 +21,7 @@
 //!     config::BotConfig,
 //!     server::{
 //!         BotServer,
-//!         handler::{Action, HandlerResult, MessageContext, MessageHandler, Response},
+//!         handler::{Action, HandlerResult, MessageContext, MessageHandler, Response, TypingHandle},
 //!     },
 //! };
 //!
@@ -31,7 +31,7 @@
 //! // Implement `MessageHandler` trait for your struct
 //! #[async_trait::async_trait]
 //! impl MessageHandler for MyHandler {
-//!     async fn handle_text(&self, _ctx: &MessageContext, text: &str) -> HandlerResult<Action> {
+//!     async fn handle_text(&self, _ctx: &MessageContext, text: &str, typing: &TypingHandle) -> HandlerResult<Action> {
 //!         let text_response = Response::text(format!("You said: {}", text));
 //!         Ok(Action::Respond(vec![text_response]))
 //!     }

@@ -34,6 +34,7 @@ use crate::{
     rate_limit::{RateLimitConfig, RateLimitResult, RateLimiterManager},
     server::handler::{
         Action, ClassicReaction, CommandType, MessageContext, MessageHandler, Response,
+        TypingHandle,
     },
     webhook::validate_timestamp,
 };
@@ -584,6 +585,12 @@ async fn process_message<H: MessageHandler>(
     // simple and cheaper than doing multiple allocations, we simply re-parse the command.
     let command = state.commands.parse(&text);
 
+    let typing_handle = TypingHandle::new(
+        state.threema_client.api().clone(),
+        ctx.sender_identity,
+        sender_public_key.clone(),
+    );
+
     let result = match command {
         ParsedCommand::Help => {
             // Already handled in webhook_handler
@@ -592,14 +599,14 @@ async fn process_message<H: MessageHandler>(
         ParsedCommand::Registered { name, args } => {
             state
                 .handler
-                .handle_command(&ctx, name, args, CommandType::Registered)
+                .handle_command(&ctx, name, args, CommandType::Registered, &typing_handle)
                 .await
         }
         ParsedCommand::Unknown { name, args } => {
             if state.commands.handle_unknown() {
                 state
                     .handler
-                    .handle_command(&ctx, name, args, CommandType::Unknown)
+                    .handle_command(&ctx, name, args, CommandType::Unknown, &typing_handle)
                     .await
             } else {
                 Ok(Action::ShowHelp {
@@ -610,8 +617,10 @@ async fn process_message<H: MessageHandler>(
                 })
             }
         }
-        ParsedCommand::None(text) => state.handler.handle_text(&ctx, text).await,
+        ParsedCommand::None(text) => state.handler.handle_text(&ctx, text, &typing_handle).await,
     };
+
+    typing_handle.stop().await;
 
     match result {
         Ok(action) => {

@@ -1,7 +1,19 @@
 //! Message handler logic.
 
+use std::sync::Mutex;
+
 use chrono::{DateTime, Utc};
-use threema_gateway::protocol::{MessageId, ThreemaId, e2e::delivery_receipt::DeliveryReceipt};
+use threema_gateway::{
+    E2eApi, E2eMessage, RecipientKey,
+    protocol::{
+        MessageId, ThreemaId,
+        e2e::{
+            delivery_receipt::DeliveryReceipt,
+            typing_indicator::{TypingIndicatorMessage, TypingStatus},
+        },
+    },
+};
+use tokio::{task::JoinHandle, time::Duration};
 
 use crate::commands::Commands;
 
@@ -38,6 +50,100 @@ pub enum CommandType {
     Unknown,
 }
 
+/// Handle for showing a typing indicator during message processing.
+///
+/// Call [`send`](Self::send) to start showing a typing indicator to the user.
+/// The indicator is automatically re-sent every 10 seconds to keep it alive.
+/// When processing completes (success or failure), the server automatically
+/// stops the indicator.
+pub struct TypingHandle {
+    api: E2eApi,
+    to: ThreemaId,
+    recipient_key: RecipientKey,
+    task: Mutex<Option<JoinHandle<()>>>,
+}
+
+impl TypingHandle {
+    /// Create a new typing handle.
+    pub(crate) fn new(api: E2eApi, to: ThreemaId, recipient_key: RecipientKey) -> Self {
+        Self {
+            api,
+            to,
+            recipient_key,
+            task: Mutex::new(None),
+        }
+    }
+
+    /// Send a typing indicator to the user.
+    ///
+    /// The indicator is sent immediately and then re-sent every 10 seconds to
+    /// keep it alive. When processing completes (success or failure), the server
+    /// automatically resets the indicator.
+    ///
+    /// This is a best-effort operation: failures are logged but do not interrupt
+    /// message processing. Calling this multiple times is a no-op after the
+    /// first call.
+    pub fn send(&self) {
+        let mut guard = self.task.lock().expect("typing handle lock poisoned");
+        if guard.is_some() {
+            return;
+        }
+
+        let api = self.api.clone();
+        let to = self.to;
+        let recipient_key = self.recipient_key.clone();
+
+        *guard = Some(tokio::spawn(async move {
+            let mut interval = tokio::time::interval(Duration::from_secs(10));
+            loop {
+                interval.tick().await;
+                let msg = TypingIndicatorMessage::new(TypingStatus::Typing).into();
+                match api.encode_and_encrypt(&msg, &recipient_key) {
+                    Ok(encrypted) => {
+                        if let Err(e) = api.send(&to, &encrypted, false).await {
+                            tracing::warn!("Failed to send typing indicator to {to}: {e}");
+                        }
+                    }
+                    Err(e) => {
+                        tracing::warn!("Failed to encrypt typing indicator for {to}: {e}");
+                    }
+                }
+            }
+        }));
+    }
+
+    /// Stop the typing indicator.
+    ///
+    /// Aborts the repeating task and sends a stop-typing indicator. Safe to call
+    /// even if [`send`](Self::send) was never called.
+    pub(crate) async fn stop(&self) {
+        let handle = {
+            let mut guard = self.task.lock().expect("typing handle lock poisoned");
+            guard.take()
+        };
+
+        if let Some(handle) = handle {
+            handle.abort();
+
+            let msg =
+                E2eMessage::TypingIndicator(TypingIndicatorMessage::new(TypingStatus::NotTyping));
+            match self.api.encode_and_encrypt(&msg, &self.recipient_key) {
+                Ok(encrypted) => {
+                    if let Err(e) = self.api.send(&self.to, &encrypted, false).await {
+                        tracing::warn!("Failed to send stop-typing indicator to {}: {e}", self.to);
+                    }
+                }
+                Err(e) => {
+                    tracing::warn!(
+                        "Failed to encrypt stop-typing indicator for {}: {e}",
+                        self.to
+                    );
+                }
+            }
+        }
+    }
+}
+
 /// Action returned by handler methods to indicate how the bot should respond.
 #[derive(Debug, Clone)]
 pub enum Action {
@@ -63,14 +169,19 @@ pub enum Action {
 /// ```rust
 /// use async_trait::async_trait;
 /// use threema_gateway_bot::server::handler::{
-///     Action, HandlerResult, MessageContext, MessageHandler, Response,
+///     Action, HandlerResult, MessageContext, MessageHandler, Response, TypingHandle,
 /// };
 ///
 /// struct EchoMessageHandler;
 ///
 /// #[async_trait]
 /// impl MessageHandler for EchoMessageHandler {
-///     async fn handle_text(&self, _ctx: &MessageContext, text: &str) -> HandlerResult<Action> {
+///     async fn handle_text(
+///         &self,
+///         ctx: &MessageContext,
+///         text: &str,
+///         typing: &TypingHandle,
+///     ) -> HandlerResult<Action> {
 ///         Ok(Action::Respond(vec![Response::text(text)]))
 ///     }
 /// }
@@ -94,7 +205,15 @@ pub trait MessageHandler: Send + Sync + 'static {
     /// Handle an incoming text message.
     ///
     /// Called for non-command messages that should be processed by your bot logic.
-    async fn handle_text(&self, ctx: &MessageContext, text: &str) -> HandlerResult<Action>;
+    ///
+    /// Use `typing.send()` to show a typing indicator while processing. The indicator is
+    /// automatically reset when this method returns.
+    async fn handle_text(
+        &self,
+        ctx: &MessageContext,
+        text: &str,
+        typing: &TypingHandle,
+    ) -> HandlerResult<Action>;
 
     /// Handle a command.
     ///
@@ -105,6 +224,9 @@ pub trait MessageHandler: Send + Sync + 'static {
     /// For registered commands (via [`Commands::register`]), this is always called.
     /// For unknown commands, this is only called if [`Commands::handle_unknown`]
     /// was set to `true`.
+    ///
+    /// Use `typing.send` to show a typing indicator while processing. The indicator is
+    /// automatically reset when this method returns.
     ///
     /// # Example
     ///
@@ -121,6 +243,7 @@ pub trait MessageHandler: Send + Sync + 'static {
     ///     command: &str,
     ///     args: &str,
     ///     command_type: CommandType,
+    ///     typing: &TypingHandle,
     /// ) -> HandlerResult<Action> {
     ///     match command {
     ///         "remind" => Ok(Action::Respond(self.handle_remind(ctx, args).await?)),
@@ -136,6 +259,7 @@ pub trait MessageHandler: Send + Sync + 'static {
         command: &str,
         args: &str,
         command_type: CommandType,
+        typing: &TypingHandle,
     ) -> HandlerResult<Action> {
         Ok(Action::ShowHelp { prelude: None })
     }

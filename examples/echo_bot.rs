@@ -21,7 +21,7 @@ use threema_gateway_bot::{
     config::BotConfig,
     server::{
         BotServer,
-        handler::{Action, HandlerResult, MessageContext, MessageHandler, Response},
+        handler::{Action, HandlerResult, MessageContext, MessageHandler, Response, TypingHandle},
     },
 };
 use tracing::info;
@@ -36,7 +36,12 @@ impl MessageHandler for EchoMessageHandler {
         Some("Echo bot: Every message you send will be echoed back to you.")
     }
 
-    async fn handle_text(&self, _ctx: &MessageContext, text: &str) -> HandlerResult<Action> {
+    async fn handle_text(
+        &self,
+        _ctx: &MessageContext,
+        text: &str,
+        _typing: &TypingHandle,
+    ) -> HandlerResult<Action> {
         Ok(Action::Respond(vec![Response::text(text)]))
     }
 }

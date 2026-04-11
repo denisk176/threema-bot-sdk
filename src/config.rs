@@ -71,13 +71,13 @@
 //! ```rust,no_run
 //! # use std::path::Path;
 //! use threema_gateway_bot::{config::BotConfig, server::BotServer};
-//! # use threema_gateway_bot::server::handler::{Action, HandlerResult, MessageContext, MessageHandler, Response};
+//! # use threema_gateway_bot::server::handler::{Action, HandlerResult, MessageContext, MessageHandler, Response, TypingHandle};
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! # struct MyHandler;
 //! # #[async_trait::async_trait]
 //! # impl MessageHandler for MyHandler {
-//! #     async fn handle_text(&self, _ctx: &MessageContext, text: &str) -> HandlerResult<Action> {
+//! #     async fn handle_text(&self, _ctx: &MessageContext, text: &str, typing: &TypingHandle) -> HandlerResult<Action> {
 //! #         Ok(Action::Ignore)
 //! #     }
 //! # }
@@ -102,7 +102,7 @@
 //!     config::{BotConfig, RateLimitingConfig, ServerConfig, ThreemaConfig},
 //!     server::BotServer,
 //! };
-//! # use threema_gateway_bot::server::handler::{Action, HandlerResult, MessageContext, MessageHandler, Response};
+//! # use threema_gateway_bot::server::handler::{Action, HandlerResult, MessageContext, MessageHandler, Response, TypingHandle};
 //!
 //! #[derive(Deserialize)]
 //! struct MyBotConfig {
@@ -135,7 +135,7 @@
 //! # struct MyHandler;
 //! # #[async_trait::async_trait]
 //! # impl MessageHandler for MyHandler {
-//! #     async fn handle_text(&self, _ctx: &MessageContext, text: &str) -> HandlerResult<Action> {
+//! #     async fn handle_text(&self, _ctx: &MessageContext, text: &str, typing: &TypingHandle) -> HandlerResult<Action> {
 //! #         Ok(Action::Ignore)
 //! #     }
 //! # }
