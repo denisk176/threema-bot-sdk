@@ -46,8 +46,8 @@ pub enum ConfigError {
 /// Error returned by [`BotServer::run`](crate::server::BotServer::run).
 #[derive(Debug, Error)]
 pub enum RunError {
-    /// Failed to validate API credentials on startup.
-    #[error("failed to validate API credentials: {0}")]
+    /// Failed to validate Threema Gateway credentials on startup.
+    #[error("failed to validate Threema Gateway credentials: {0}")]
     CredentialValidation(#[source] ApiError),
 
     /// Failed to bind the HTTP server.
