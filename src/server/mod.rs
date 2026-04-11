@@ -301,7 +301,8 @@ async fn webhook_handler<H: MessageHandler>(
         }
         Err(ThreemaApiError::ParseError(msg)) => {
             tracing::warn!("Failed to parse webhook: {}", msg);
-            // Return 200 OK to prevent Threema Gateway retry storms
+            // Return 200 OK to prevent Threema Gateway delivery reattempts,
+            // if parsing fails then retrying will not help.
             return (axum::http::StatusCode::OK, "Parse error");
         }
         Err(e) => {
@@ -313,7 +314,9 @@ async fn webhook_handler<H: MessageHandler>(
     // Verify timestamp
     if let Err(e) = validate_timestamp(msg.date, state.config.server.max_webhook_age_seconds) {
         tracing::warn!("Webhook verification failed from {}: {}", msg.from, e);
-        return (axum::http::StatusCode::UNAUTHORIZED, "Invalid timestamp");
+        // Return 200 OK to prevent Threema Gateway delivery reattempts,
+        // if message is too old then retrying will not help.
+        return (axum::http::StatusCode::OK, "Invalid timestamp");
     }
 
     // Check for duplicate message
