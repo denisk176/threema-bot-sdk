@@ -1,9 +1,9 @@
-//! # Threema Gateway Bot
+//! # Threema Bot SDK
 //!
 //! A library for building Threema Gateway bots in Rust.
 //!
-//! This library provides the foundational components for building production-ready
-//! Threema bots with:
+//! This library provides the foundational components for building Threema bots
+//! with:
 //!
 //! - **Webhook handling** to receive and validate Threema Gateway messages
 //! - **Configuration system** based on TOML files and env vars, extensible by your bot
