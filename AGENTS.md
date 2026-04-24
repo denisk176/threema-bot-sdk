@@ -16,6 +16,22 @@ Guidelines:
 - Functionality that is specific to certain use cases (e.g. session handling for LLM based bots)
   should go into a separate crate or directly into the bot codebase
 
+## Development
+
+```bash
+# Build
+cargo build
+
+# Run tests
+cargo test
+
+# Check without building
+cargo check
+
+# Lint
+cargo clippy
+```
+
 ## Conventions
 
 ### Rust

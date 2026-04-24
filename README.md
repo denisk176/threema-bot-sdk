@@ -31,7 +31,12 @@ struct MyHandler;
 // Implement `MessageHandler` trait for your struct
 #[async_trait::async_trait]
 impl MessageHandler for MyHandler {
-    async fn handle_text(&self, _ctx: &MessageContext, text: &str, typing: &TypingHandle) -> HandlerResult<Action> {
+    async fn handle_text(
+        &self,
+        _ctx: &MessageContext,
+        text: &str,
+        typing: &TypingHandle,
+    ) -> HandlerResult<Action> {
         let text_response = Response::text(format!("You said: {}", text));
         Ok(Action::Respond(vec![text_response]))
     }
@@ -44,22 +49,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     BotServer::new(config, MyHandler)?.run().await?;
     Ok(())
 }
-```
-
-## Development
-
-```bash
-# Build
-cargo build
-
-# Run tests
-cargo test
-
-# Check without building
-cargo check
-
-# Lint
-cargo clippy
 ```
 
 ## References
