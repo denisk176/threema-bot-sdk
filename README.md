@@ -1,5 +1,9 @@
 # Threema Bot SDK
 
+[![GitHub CI][github-actions-badge]][github-actions]
+[![Crates.io Version][crates-io-badge]][crates-io]
+[![Crates.io Downloads][crates-io-download-badge]][crates-io-download]
+
 A library for building Threema Gateway bots in Rust.
 
 This library provides the foundational components for building Threema bots
@@ -78,3 +82,12 @@ Licensed under either of
 Unless you explicitly state otherwise, any contribution intentionally submitted
 for inclusion in the work by you, as defined in the Apache-2.0 license, shall
 be dual licensed as above, without any additional terms or conditions.
+
+<!-- Badges -->
+
+[github-actions]: https://github.com/threema-ch/threema-bot-sdk/actions?query=branch%3Amain
+[github-actions-badge]: https://github.com/threema-ch/threema-bot-sdk/workflows/CI/badge.svg
+[crates-io]: https://crates.io/crates/threema-gateway-bot
+[crates-io-badge]: https://img.shields.io/crates/v/threema-gateway-bot.svg?maxAge=3600
+[crates-io-download]: https://crates.io/crates/threema-gateway-bot
+[crates-io-download-badge]: https://img.shields.io/crates/d/threema-gateway-bot.svg?maxAge=3600
