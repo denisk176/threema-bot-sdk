@@ -17,6 +17,8 @@ with:
 The command parsing infrastructure allows for both slash-command style (`/remind 30m`) or
 word-command style (`remind 30m`).
 
+Documentation: [docs.rs/threema-gateway-bot/](https://docs.rs/threema-gateway-bot/)
+
 ## Quick Start
 
 ```rust
